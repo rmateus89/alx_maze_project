@@ -1,11 +1,29 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
-void draw_player(sdl_instance *sdl, player *player);
-void rotate_player(player *player, SDL_Point *mouse);
-SDL_Point move_player(player *player);
-void player_collision_detection(player *player, map_t *map);
-int quadrant_of_angle(int angle, int *resulting_angle);
-void slide_on_wall(player *player);
+#include "macros.h"
 
-#endif
+// Player structure
+typedef struct {
+    float x;
+    float y;
+    float width;
+    float height;
+    int turn_direction; // -1 for left, +1 for right
+    int walk_direction; // -1 for back, +1 for forward
+    float rotation_angle;
+    float move_speed;
+    float rotation_speed;
+} Player;
+
+// Function to initialize the player
+void initialize_player(void);
+
+// Function to update the player's position
+void update_player(void);
+
+// Function to render the player
+void render_player(void);
+
+#endif // PLAYER_H
+

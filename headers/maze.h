@@ -1,44 +1,16 @@
 #ifndef MAZE_H
 #define MAZE_H
 
-#ifdef LINUX
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_thread.h>
-#elif defined(MAC)
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_thread.h>
-#else
-#include <SDL.h>
-#include <SDL_thread.h>
-#endif
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-
-#include "structures.h"
 #include "macros.h"
-#include "parser.h"
-#include "player.h"
-#include "texture.h"
-#include "raycast.h"
 
+// Function to initialize the maze
+void initialize_maze(void);
 
-void create_window(char *name, sdl_instance *sdl);
-void safe_close_sdl(sdl_instance *sdl);
-void create_renderer(sdl_instance *sdl);
-void print_sdl_error(void);
+// Function to render the maze
+void render_maze(void);
 
-void game_event_loop(sdl_instance *sdl, map_t *map);
-void poll_events(int *quit, SDL_Event *e, player *player, SDL_Point *mouse,
-		SDL_bool *map_active);
+// Function to check for wall collisions
+int is_wall(float x, float y);
 
-void draw_2d_map(sdl_instance *sdl, map_t *map);
-void send_frame(sdl_instance *sdl);
+#endif // MAZE_H
 
-
-SDL_Point rotate_point(const SDL_Point *point, float cx, float cy, float deg,
-		float ray_size);
-
-#endif
