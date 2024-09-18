@@ -1,190 +1,37 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <SDL2/SDL.h>
+#include "../headers/maze.h"
 
-#define SCREEN_WIDTH 640
-#define SCREEN_HEIGHT 480
-#define MAP_WIDTH 24
-#define MAP_HEIGHT 24
-#define TEX_WIDTH 64
-#define TEX_HEIGHT 64
+/**
+ * main - Entry point
+ * @argc: Number of arguments passed to the program
+ * @argv: Pointer to string arguments passed to the program
+ * Return: (0) on success, exits with failure status on failure
+ */
+int main(int argc, char **argv)
+{
+	sdl_instance sdl = {NULL, NULL, NULL, NULL, NULL, NULL};
+	map_t map;
+	char *map_path;
 
-int worldMap[MAP_WIDTH][MAP_HEIGHT] = {
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
-};
+	if (argc < 2)
+	{
+		printf("Usage: %s 'map_path'", argv[0]);
+		exit(EXIT_FAILURE);
+	}
+	map_path = concat("maps/", argv[1]);
+	map = handle_file(map_path);
 
-void draw(SDL_Renderer *renderer, int x, int y, int w, int h, Uint32 color) {
-    SDL_Rect rect = {x, y, w, h};
-    SDL_SetRenderDrawColor(renderer, (color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF, 255);
-    SDL_RenderFillRect(renderer, &rect);
+	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+	{
+		printf("SDL could not initialize! SDL_Error:%s\n", SDL_GetError());
+		exit(EXIT_FAILURE);
+	}
+
+	create_window(WINDOW_TITLE, &sdl);
+	create_renderer(&sdl);
+
+	game_event_loop(&sdl, &map);
+	free_map(&map);
+	safe_close_sdl(&sdl);
+
+	return (0);
 }
-
-void raycast(SDL_Renderer *renderer, double posX, double posY, double dirX, double dirY, double planeX, double planeY) {
-    for (int x = 0; x < SCREEN_WIDTH; x++) {
-        double cameraX = 2 * x / (double)SCREEN_WIDTH - 1;
-        double rayDirX = dirX + planeX * cameraX;
-        double rayDirY = dirY + planeY * cameraX;
-
-        int mapX = (int)posX;
-        int mapY = (int)posY;
-
-        double sideDistX;
-        double sideDistY;
-
-        double deltaDistX = fabs(1 / rayDirX);
-        double deltaDistY = fabs(1 / rayDirY);
-        double perpWallDist;
-
-        int stepX;
-        int stepY;
-
-        int hit = 0;
-        int side;
-
-        if (rayDirX < 0) {
-            stepX = -1;
-            sideDistX = (posX - mapX) * deltaDistX;
-        } else {
-            stepX = 1;
-            sideDistX = (mapX + 1.0 - posX) * deltaDistX;
-        }
-        if (rayDirY < 0) {
-            stepY = -1;
-            sideDistY = (posY - mapY) * deltaDistY;
-        } else {
-            stepY = 1;
-            sideDistY = (mapY + 1.0 - posY) * deltaDistY;
-        }
-
-        while (hit == 0) {
-            if (sideDistX < sideDistY) {
-                sideDistX += deltaDistX;
-                mapX += stepX;
-                side = 0;
-            } else {
-                sideDistY += deltaDistY;
-                mapY += stepY;
-                side = 1;
-            }
-            if (worldMap[mapX][mapY] > 0) hit = 1;
-        }
-
-        if (side == 0) perpWallDist = (mapX - posX + (1 - stepX) / 2) / rayDirX;
-        else perpWallDist = (mapY - posY + (1 - stepY) / 2) / rayDirY;
-
-        int lineHeight = (int)(SCREEN_HEIGHT / perpWallDist);
-
-        int drawStart = -lineHeight / 2 + SCREEN_HEIGHT / 2;
-        if (drawStart < 0) drawStart = 0;
-        int drawEnd = lineHeight / 2 + SCREEN_HEIGHT / 2;
-        if (drawEnd >= SCREEN_HEIGHT) drawEnd = SCREEN_HEIGHT - 1;
-
-        Uint32 color;
-        switch (worldMap[mapX][mapY]) {
-            case 1: color = 0xFF0000; break;
-            default: color = 0xFFFFFF; break;
-            }
-    }
- }
-int main() {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        fprintf(stderr, "Could not initialize SDL: %s\n", SDL_GetError());
-        return 1;
-    }
-
-    SDL_Window *window = SDL_CreateWindow("3D Maze Game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-    if (!window) {
-        fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
-        SDL_Quit();
-        return 1;
-    }
-
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    if (!renderer) {
-        fprintf(stderr, "Could not create renderer: %s\n", SDL_GetError());
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 1;
-    }
-
-    double posX = 22, posY = 12;
-    double dirX = -1, dirY = 0;
-    double planeX = 0, planeY = 0.66;
-
-    int running = 1;
-    SDL_Event event;
-    while (running) {
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                running = 0;
-            }
-            if (event.type == SDL_KEYDOWN) {
-                if (event.key.keysym.sym == SDLK_ESCAPE) {
-                    running = 0;
-                }
-                if (event.key.keysym.sym == SDLK_UP) {
-                    if (worldMap[(int)(posX + dirX * 0.1)][(int)posY] == 0) posX += dirX * 0.1;
-                    if (worldMap[(int)posX][(int)(posY + dirY * 0.1)] == 0) posY += dirY * 0.1;
-                }
-                if (event.key.keysym.sym == SDLK_DOWN) {
-                    if (worldMap[(int)(posX - dirX * 0.1)][(int)posY] == 0) posX -= dirX * 0.1;
-                    if (worldMap[(int)posX][(int)(posY - dirY * 0.1)] == 0) posY -= dirY * 0.1;
-                }
-                if (event.key.keysym.sym == SDLK_LEFT) {
-                    double oldDirX = dirX;
-                    dirX = dirX * cos(0.1) - dirY * sin(0.1);
-                    dirY = oldDirX * sin(0.1) + dirY * cos(0.1);
-                    double oldPlaneX = planeX;
-                    planeX = planeX * cos(0.1) - planeY * sin(0.1);
-                    planeY = oldPlaneX * sin(0.1) + planeY * cos(0.1);
-                }
-                if (event.key.keysym.sym == SDLK_RIGHT) {
-                    double oldDirX = dirX;
-                    dirX = dirX * cos(-0.1) - dirY * sin(-0.1);
-                    dirY = oldDirX * sin(-0.1) + dirY * cos(-0.1);
-                    double oldPlaneX = planeX;
-                    planeX = planeX * cos(-0.1) - planeY * sin(-0.1);
-                    planeY = oldPlaneX * sin(-0.1) + planeY * cos(-0.1);
-                }
-            }
-        }
-
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
-
-        raycast(renderer, posX, posY, dirX, dirY, planeX, planeY);
-
-        SDL_RenderPresent(renderer);
-    }
-
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
-
-    return 0;
-}
-
