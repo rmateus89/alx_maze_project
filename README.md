@@ -4,7 +4,7 @@ The ALX Maze Game Project
 
 The objective of this project is to develop a maze game where players navigate through a maze using raycasting techniques to create a pseudo-3D effect. Raycasting is a rendering technique used in computer graphics to simulate a 3D environment in a 2D space.
 
-I have always been fascinated by game development. When the opportunity arose to create a maze game using SDL2, C++, and raycasting, I dedicated significant time to mastering the necessary skills to bring this project to life.
+I have always been fascinated by game development. When the opportunity arose to create a maze game using SDL2, C, and raycasting, I dedicated significant time to mastering the necessary skills to bring this project to life.
 
 This project is implemented on Ubuntu 14.04 LTS using the gcc compiler, along with the SDL2 and SDL2_image libraries for graphics and input.
 
